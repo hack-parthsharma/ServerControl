@@ -1,0 +1,70 @@
+#!/bin/bash
+: "
+Shellscript to setup and start virtual environment
+"
+
+DEPENDENCIES="python-pip"
+pkg_mgrs=(
+    "pacman",
+    "apt",
+    "apt-get",
+    "aptitude"
+)
+
+main()
+{
+    VENV_NAME="$1"
+
+    if [[ ! -d "$VENV_NAME" ]]; then
+        # if virtual environment doesnt exist
+        echo "Virtual Environment [$VENV_NAME] does not exist, creating..."
+
+        # Check if venv is installed
+        python -m venv --help &> /dev/null
+        venv_is_installed="$?"
+
+        if [[ ! $venv_is_installed == "0" ]]; then
+            # Virtual Environment is not installed
+            echo "Dependency [venv] is not installed."
+
+            # Check if pip is installed
+            python -m pip --help &> /dev/null # Redirect to NULL
+            pip_is_installed="$?"
+            if [[ ! $pip_is_installed == "0" ]]; then
+                """ 
+                Error
+                # 0 : No Error, success
+                # >= 1 : Error
+                """
+                echo "Dependency [python-pip] is not installed"
+                for mgr in "${pkg_mgrs[@]}"; do
+                    type -P "$mgr" &> /dev/null
+                    if [[ "$?" == "0" ]]; then
+                        case "$mgr" in
+                            "pacman")
+                                sudo pacman -S python-pip
+                                ;;
+                            "apt" | "apt-get" | "aptitude")
+                                sudo $mgr install python-pip
+                                ;;
+                            *)
+                                echo "Invalid Package Manager, please install the dependency [$DEPENDENCIES]"
+                                ;;
+                        esac
+                    fi              
+                done
+            fi
+        fi
+        python -m venv $VENV_NAME
+    fi
+
+    # Start Virtual Environment
+    echo "Starting Virtual Environment [$VENV_NAME]..."
+    ./$VENV_NAME/bin/activate && \
+        echo "Successfully started Virtual Environment $VENV_NAME" || \
+        echo "Error starting Virtual Environment $VENV_NAME"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
